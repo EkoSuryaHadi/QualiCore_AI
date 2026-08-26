@@ -27,6 +27,8 @@ class NCRCreate(BaseModel):
 class NCRUpdate(BaseModel):
     title:str|None=None; description:str|None=None; severity:Severity|None=None; status:WorkflowStatus|None=None
     root_cause:str|None=None; corrective_action:str|None=None; due_date:date|None=None
+class NCRClose(BaseModel):
+    comment:str|None=None
 class NCROut(NCRCreate, ORM): id:str; organization_id:str; status:WorkflowStatus; root_cause:str|None; corrective_action:str|None; created_by:str; created_at:datetime; closed_at:datetime|None
 
 class PunchCreate(BaseModel):
