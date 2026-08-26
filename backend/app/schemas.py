@@ -40,7 +40,7 @@ class PunchOut(PunchCreate, ORM): id:str; organization_id:str; status:WorkflowSt
 class DashboardOut(BaseModel):
     total_projects:int; active_projects:int; total_inspections:int; failed_inspections:int; open_ncr:int; open_punch:int; overdue_punch:int; quality_score:float
 class ProjectWorkspaceOut(BaseModel):
-    project:ProjectOut; total_inspections:int; failed_inspections:int; open_ncr:int; critical_ncr:int; open_punch:int; overdue_punch:int; evidence_count:int; quality_score:float
+    project:ProjectOut; total_inspections:int; failed_inspections:int; open_ncr:int; critical_ncr:int; open_punch:int; overdue_punch:int; evidence_count:int; quality_score:float; open_documents:int=0; high_risks:int=0
 class EvidenceOut(ORM):
     id:str; project_id:str; entity_type:EvidenceEntity; entity_id:str; file_name:str; content_type:str|None; size_bytes:int; uploaded_by:str; created_at:datetime
 class AuditOut(ORM):
