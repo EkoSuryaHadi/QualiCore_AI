@@ -1,0 +1,1 @@
+import AuthGuard from "@/components/AuthGuard";import Shell from "@/components/Shell";export default function Page(){return <AuthGuard><Shell><h1>Reports</h1><div className="card">Executive reporting baseline is available through the API.</div></Shell></AuthGuard>}

@@ -1,0 +1,4 @@
+"use client";
+import {useEffect,useState} from "react";import AuthGuard from "@/components/AuthGuard";import Shell from "@/components/Shell";import {api} from "@/lib/api";
+type D={active_projects:number;total_inspections:number;open_ncr:number;open_punch:number;quality_score:number};
+export default function Page(){const[d,setD]=useState<D|null>(null);useEffect(()=>{api<D>("/dashboard/summary").then(setD).catch(()=>{})},[]);const cards=[["Quality Score",d?.quality_score??"—"],["Active Projects",d?.active_projects??"—"],["Open NCR",d?.open_ncr??"—"],["Open Punch",d?.open_punch??"—"]];return <AuthGuard><Shell><h1>Portfolio Assurance</h1><p className="muted">Deployable baseline v0.3.1</p><div className="grid">{cards.map(([l,v])=><div className="card" key={String(l)}><div className="muted">{l}</div><div className="metric">{v}</div></div>)}</div></Shell></AuthGuard>}

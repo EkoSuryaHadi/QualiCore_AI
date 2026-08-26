@@ -1,0 +1,1 @@
+import AuthGuard from "@/components/AuthGuard";import Shell from "@/components/Shell";export default function Page(){return <AuthGuard><Shell><h1>Audit Trail</h1><div className="card">Audit API baseline is enabled.</div></Shell></AuthGuard>}

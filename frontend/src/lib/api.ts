@@ -1,0 +1,4 @@
+const SERVICE=process.env.NEXT_PUBLIC_BACKEND_URL||"";
+const API=process.env.NEXT_PUBLIC_API_URL||(SERVICE?`${SERVICE}/v1`:"http://localhost:8000/v1");
+export function token(){if(typeof window==="undefined")return "";return localStorage.getItem("qc_token")||""}
+export async function api<T>(path:string,options:RequestInit={}):Promise<T>{const headers=new Headers(options.headers);const isForm=typeof FormData!=="undefined"&&options.body instanceof FormData;if(!isForm)headers.set("Content-Type","application/json");const t=token();if(t)headers.set("Authorization",`Bearer ${t}`);const res=await fetch(`${API}${path}`,{...options,headers,cache:"no-store"});if(res.status===204)return undefined as T;if(!res.ok){let message=`HTTP ${res.status}`;try{const body=await res.json();message=body.detail||JSON.stringify(body)}catch{}throw new Error(message)}return res.json()}

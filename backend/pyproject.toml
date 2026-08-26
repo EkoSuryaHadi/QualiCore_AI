@@ -1,0 +1,14 @@
+[project]
+name = "qualicore-backend"
+version = "0.3.1"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.116,<1",
+  "sqlalchemy>=2.0,<3",
+  "psycopg[binary]>=3.2,<4",
+  "pydantic>=2.11,<3",
+  "pydantic-settings>=2.10,<3",
+  "python-multipart>=0.0.20,<1",
+  "email-validator>=2.2,<3",
+  "alembic>=1.16,<2"
+]

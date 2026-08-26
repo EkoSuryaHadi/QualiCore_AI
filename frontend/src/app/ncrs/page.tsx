@@ -1,0 +1,1 @@
+import AuthGuard from "@/components/AuthGuard";import Shell from "@/components/Shell";export default function Page(){return <AuthGuard><Shell><h1>NCR Management</h1><div className="card">Module baseline ready. Detailed workflow will be built next.</div></Shell></AuthGuard>}

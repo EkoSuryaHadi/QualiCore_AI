@@ -1,0 +1,3 @@
+"use client";
+import {useEffect,useState} from "react";import AuthGuard from "@/components/AuthGuard";import Shell from "@/components/Shell";import {api} from "@/lib/api";type P={id:string;code:string;name:string;status:string;progress:number};
+export default function Projects(){const[items,setItems]=useState<P[]>([]);useEffect(()=>{api<P[]>("/projects").then(setItems).catch(()=>{})},[]);return <AuthGuard><Shell><h1>Projects</h1><div className="card">{items.length?items.map(p=><p key={p.id}><b>{p.code}</b> — {p.name} · {p.status} · {p.progress}%</p>):<p className="muted">No projects yet.</p>}</div></Shell></AuthGuard>}
