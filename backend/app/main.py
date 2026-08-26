@@ -1,18 +1,30 @@
+import logging
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+
 from .bootstrap import bootstrap_database
 from .config import settings
+from .database import engine
 from .api import audit, auth, dashboard, documents, evidence, inspections, ncrs, notifications, projects, punch, reports, risks, users
+
+logger = logging.getLogger("qualicore")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    bootstrap_database()
+    try:
+        bootstrap_database()
+    except Exception:
+        # Do not crash the whole serverless function if database bootstrap fails.
+        # Runtime logs will still contain the traceback for diagnosis.
+        logger.exception("Database bootstrap failed during startup")
     yield
 
 app = FastAPI(
     title="QualiCore AI MVP API",
-    version="0.3.1",
+    version="0.3.2",
     description="Deployable Project Assurance MVP baseline for EPC quality workflows",
     lifespan=lifespan,
 )
@@ -32,4 +44,18 @@ for router in (
 
 @app.get("/health", tags=["System"])
 def health():
-    return {"status": "ok", "service": "qualicore-api", "version": "0.3.1"}
+    return {"status": "ok", "service": "qualicore-api", "version": "0.3.2"}
+
+@app.get("/health/db", tags=["System"])
+def health_db():
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+        return {"status": "ok", "database": "connected"}
+    except Exception as exc:
+        logger.exception("Database health check failed")
+        return {
+            "status": "error",
+            "database": "unavailable",
+            "error_type": type(exc).__name__,
+        }
