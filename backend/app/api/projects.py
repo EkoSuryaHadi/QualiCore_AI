@@ -3,7 +3,7 @@ from sqlalchemy import func,select
 from sqlalchemy.orm import Session
 from ..activity import audit
 from ..database import get_db
-from ..models import Document,DocumentStatus,Evidence,Inspection,InspectionResult,NCR,NCRSeverity,Project,PunchItem,Risk,RiskStatus,Role,User,WorkflowStatus
+from ..models import Document,DocumentStatus,Evidence,Inspection,InspectionResult,NCR,Severity,Project,PunchItem,Risk,RiskStatus,Role,User,WorkflowStatus
 from ..schemas import ProjectCreate,ProjectOut,ProjectUpdate,ProjectWorkspaceOut
 from ..security import get_current_user,require_roles
 router=APIRouter(prefix='/projects',tags=['Projects'])
@@ -23,7 +23,7 @@ def detail(id:str,db:Session=Depends(get_db),user:User=Depends(get_current_user)
 def workspace(id:str,db:Session=Depends(get_db),user:User=Depends(get_current_user)):
  p=get_project(db,id,user.organization_id);scalar=lambda q:db.scalar(q) or 0
  inspections=scalar(select(func.count()).select_from(Inspection).where(Inspection.project_id==id));failed=scalar(select(func.count()).select_from(Inspection).where(Inspection.project_id==id,Inspection.result==InspectionResult.FAIL));passed=scalar(select(func.count()).select_from(Inspection).where(Inspection.project_id==id,Inspection.result==InspectionResult.PASS));score=round(passed/inspections*100,1) if inspections else 100.0
- return dict(project=p,quality_score=score,inspection_count=inspections,failed_inspections=failed,open_ncr=scalar(select(func.count()).select_from(NCR).where(NCR.project_id==id,NCR.status!=WorkflowStatus.CLOSED)),critical_ncr=scalar(select(func.count()).select_from(NCR).where(NCR.project_id==id,NCR.status!=WorkflowStatus.CLOSED,NCR.severity.in_([NCRSeverity.HIGH,NCRSeverity.CRITICAL]))),open_punch=scalar(select(func.count()).select_from(PunchItem).where(PunchItem.project_id==id,PunchItem.status!=WorkflowStatus.CLOSED)),overdue_punch=0,evidence_count=scalar(select(func.count()).select_from(Evidence).where(Evidence.project_id==id)),open_documents=scalar(select(func.count()).select_from(Document).where(Document.project_id==id,Document.status!=DocumentStatus.APPROVED)),high_risks=scalar(select(func.count()).select_from(Risk).where(Risk.project_id==id,Risk.status!=RiskStatus.CLOSED,Risk.score>=15)))
+ return dict(project=p,quality_score=score,total_inspections=inspections,failed_inspections=failed,open_ncr=scalar(select(func.count()).select_from(NCR).where(NCR.project_id==id,NCR.status!=WorkflowStatus.CLOSED)),critical_ncr=scalar(select(func.count()).select_from(NCR).where(NCR.project_id==id,NCR.status!=WorkflowStatus.CLOSED,NCR.severity.in_([Severity.HIGH,Severity.CRITICAL]))),open_punch=scalar(select(func.count()).select_from(PunchItem).where(PunchItem.project_id==id,PunchItem.status!=WorkflowStatus.CLOSED)),overdue_punch=0,evidence_count=scalar(select(func.count()).select_from(Evidence).where(Evidence.project_id==id)),open_documents=scalar(select(func.count()).select_from(Document).where(Document.project_id==id,Document.status!=DocumentStatus.APPROVED)),high_risks=scalar(select(func.count()).select_from(Risk).where(Risk.project_id==id,Risk.status!=RiskStatus.CLOSED,Risk.score>=15)))
 @router.patch('/{id}',response_model=ProjectOut)
 def update(id:str,b:ProjectUpdate,db:Session=Depends(get_db),user:User=Depends(require_roles(Role.ADMIN,Role.QA_MANAGER))):
  p=get_project(db,id,user.organization_id)
