@@ -8,7 +8,7 @@ from sqlalchemy import text
 from .bootstrap import bootstrap_database
 from .config import settings
 from .database import engine
-from .api import audit, auth, dashboard, documents, evidence, inspections, ncrs, notifications, projects, punch, reports, risks, users
+from .api import audit, auth, dashboard, documents, evidence, inspections, ncrs, notifications, projects, punch, reports, risks, users, vendors
 
 logger = logging.getLogger("qualicore")
 
@@ -22,7 +22,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="QualiCore AI MVP API",
-    version="0.3.3",
+    version="0.3.4",
     description="Deployable Project Assurance MVP baseline for EPC quality workflows",
     lifespan=lifespan,
 )
@@ -39,13 +39,13 @@ app.add_middleware(
 for router in (
     auth.router, users.router, projects.router, inspections.router, ncrs.router,
     punch.router, dashboard.router, evidence.router, audit.router,
-    notifications.router, documents.router, risks.router, reports.router,
+    notifications.router, documents.router, risks.router, vendors.router, reports.router,
 ):
     app.include_router(router, prefix="/v1")
 
 @app.get("/health", tags=["System"])
 def health():
-    return {"status": "ok", "service": "qualicore-api", "version": "0.3.3"}
+    return {"status": "ok", "service": "qualicore-api", "version": "0.3.4"}
 
 @app.get("/health/db", tags=["System"])
 def health_db():
