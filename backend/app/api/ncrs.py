@@ -59,6 +59,15 @@ def create(
     if not project:
         raise HTTPException(404, "Project not found")
 
+    duplicate = db.scalar(
+        select(NCR).where(
+            NCR.organization_id == user.organization_id,
+            NCR.number == body.number,
+        )
+    )
+    if duplicate:
+        raise HTTPException(409, "NCR number already exists")
+
     item = NCR(
         **body.model_dump(),
         organization_id=user.organization_id,
