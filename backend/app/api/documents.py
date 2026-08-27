@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from ..activity import audit,notify
 from ..database import get_db
@@ -17,10 +18,18 @@ def list_docs(project_id:str|None=None,status:DocumentStatus|None=None,db:Sessio
  if project_id:q=q.where(Document.project_id==project_id)
  if status:q=q.where(Document.status==status)
  return db.scalars(q.order_by(Document.updated_at.desc())).all()
+@router.get('/{id}',response_model=DocumentOut)
+def detail(id:str,db:Session=Depends(get_db),user:User=Depends(get_current_user)):
+ return get_item(db,id,user.organization_id)
 @router.post('',response_model=DocumentOut,status_code=201)
 def create(b:DocumentCreate,db:Session=Depends(get_db),user:User=Depends(require_roles(Role.ADMIN,Role.QA_MANAGER,Role.QA_ENGINEER))):
  if not db.scalar(select(Project).where(Project.id==b.project_id,Project.organization_id==user.organization_id)):raise HTTPException(404,'Project not found')
- x=Document(**b.model_dump(),organization_id=user.organization_id,created_by=user.id);db.add(x);db.flush();audit(db,user,'CREATE','DOCUMENT',x.id,f'Created {x.document_no} Rev {x.revision}');db.commit();db.refresh(x);return x
+ if db.scalar(select(Document).where(Document.organization_id==user.organization_id,Document.document_no==b.document_no)):raise HTTPException(409,'Document number already exists')
+ x=Document(**b.model_dump(),organization_id=user.organization_id,created_by=user.id);db.add(x)
+ try:
+  db.flush();audit(db,user,'CREATE','DOCUMENT',x.id,f'Created {x.document_no} Rev {x.revision}');db.commit();db.refresh(x);return x
+ except IntegrityError:
+  db.rollback();raise HTTPException(409,'Document number already exists')
 @router.patch('/{id}',response_model=DocumentOut)
 def update(id:str,b:DocumentUpdate,db:Session=Depends(get_db),user:User=Depends(require_roles(Role.ADMIN,Role.QA_MANAGER,Role.QA_ENGINEER))):
  x=get_item(db,id,user.organization_id)
