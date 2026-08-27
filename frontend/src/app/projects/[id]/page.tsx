@@ -48,6 +48,8 @@ export default function ProjectWorkspacePage() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  const projectHref = (path: string) => `${path}?project_id=${encodeURIComponent(id)}`;
+
   return (
     <AuthGuard>
       <Shell>
@@ -86,14 +88,14 @@ export default function ProjectWorkspacePage() {
             </div>
 
             <div className="card section-card">
-              <div className="toolbar"><div><h2>Assurance Modules</h2><p className="muted small">Open project-related assurance records.</p></div></div>
+              <div className="toolbar"><div><h2>Assurance Modules</h2><p className="muted small">Open assurance records already scoped to this project.</p></div></div>
               <div className="module-grid">
-                <ModuleLink href="/inspections" title="Inspections / ITP" text="Inspection records and quality results" />
-                <ModuleLink href="/ncrs" title="NCR" text="Non-conformance and corrective actions" />
-                <ModuleLink href="/punchlist" title="Punch List" text="Outstanding completion items" />
-                <ModuleLink href="/documents" title="Document Control" text="Revisions, review and approval" />
-                <ModuleLink href="/risks" title="Risk Register" text="Quality and assurance risks" />
-                <ModuleLink href="/audit" title="Audit Trail" text="Recorded project actions" />
+                <ModuleLink href={projectHref("/inspections")} title="Inspections / ITP" text="Inspection records and quality results" />
+                <ModuleLink href={projectHref("/ncrs")} title="NCR" text="Non-conformance and corrective actions" />
+                <ModuleLink href={projectHref("/punchlist")} title="Punch List" text="Outstanding completion items" />
+                <ModuleLink href={projectHref("/documents")} title="Document Control" text="Revisions, review and approval" />
+                <ModuleLink href={projectHref("/risks")} title="Risk Register" text="Quality and assurance risks" />
+                <ModuleLink href={projectHref("/audit")} title="Audit Trail" text="Recorded project actions" />
               </div>
             </div>
           </>
