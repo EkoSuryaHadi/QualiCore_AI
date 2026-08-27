@@ -89,8 +89,9 @@ export default function PunchDetailPage() {
     try {
       const saved = await save();
       if (!saved) return;
-      const closed = await api<Punch>(`/punch/${id}/close`, { method: "POST", body: JSON.stringify({}) });
-      setItem(closed);
+      await api<Punch>(`/punch/${id}/close`, { method: "POST", body: JSON.stringify({}) });
+      router.push(`/projects/${item.project_id}`);
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to close punch item");
     } finally {
@@ -119,9 +120,8 @@ export default function PunchDetailPage() {
       body.append("file", file);
       await api<Evidence>(`/evidence/PUNCH/${id}`, { method: "POST", body });
 
-      let current = item;
       if (item.status === "OPEN") {
-        current = await api<Punch>(`/punch/${id}`, {
+        const current = await api<Punch>(`/punch/${id}`, {
           method: "PATCH",
           body: JSON.stringify({ status: "IN_PROGRESS" }),
         });
