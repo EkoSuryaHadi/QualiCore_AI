@@ -17,24 +17,25 @@ async def lifespan(app: FastAPI):
     try:
         bootstrap_database()
     except Exception:
-        # Do not crash the whole serverless function if database bootstrap fails.
-        # Runtime logs will still contain the traceback for diagnosis.
         logger.exception("Database bootstrap failed during startup")
     yield
 
 app = FastAPI(
     title="QualiCore AI MVP API",
-    version="0.3.2",
+    version="0.3.3",
     description="Deployable Project Assurance MVP baseline for EPC quality workflows",
     lifespan=lifespan,
 )
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_list,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 for router in (
     auth.router, users.router, projects.router, inspections.router, ncrs.router,
     punch.router, dashboard.router, evidence.router, audit.router,
@@ -44,7 +45,7 @@ for router in (
 
 @app.get("/health", tags=["System"])
 def health():
-    return {"status": "ok", "service": "qualicore-api", "version": "0.3.2"}
+    return {"status": "ok", "service": "qualicore-api", "version": "0.3.3"}
 
 @app.get("/health/db", tags=["System"])
 def health_db():
