@@ -1,5 +1,5 @@
-import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Settings(BaseSettings):
     database_url: str = "sqlite:///./qualicore.db"
@@ -9,12 +9,15 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000"
     auto_bootstrap: bool = False
     seed_demo: bool = False
-    upload_dir: str = "/tmp/qualicore_uploads" if os.getenv("VERCEL") else "./uploads"
+    # Vercel Functions expose a read-only application filesystem.
+    # /tmp is the writable ephemeral location supported at runtime.
+    upload_dir: str = "/tmp/qualicore_uploads"
     model_config = SettingsConfigDict(env_file="../.env", extra="ignore")
 
     @property
     def cors_list(self):
         values = [x.strip() for x in self.cors_origins.split(",") if x.strip()]
         return values or ["http://localhost:3000"]
+
 
 settings = Settings()
