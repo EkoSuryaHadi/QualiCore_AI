@@ -96,6 +96,7 @@ export default function ProjectWorkspacePage() {
                 <ModuleLink href={projectHref("/documents")} title="Document Control" text="Revisions, review and approval" />
                 <ModuleLink href={projectHref("/risks")} title="Risk Register" text="Quality and assurance risks" />
                 <ModuleLink href={projectHref("/vendors")} title="Vendor Quality" text="Supplier performance and watchlist" />
+                <ModuleLink href={projectHref("/assurance")} title="AI Assurance" text="Early warnings and recommended actions" />
                 <ModuleLink href={projectHref("/reports")} title="Executive Report" text="Current assurance snapshot, priorities and export" />
                 <ModuleLink href={projectHref("/audit")} title="Audit Trail" text="Recorded project actions" />
               </div>
