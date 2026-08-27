@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import AuthGuard from "@/components/AuthGuard";
 import Shell from "@/components/Shell";
 import { api } from "@/lib/api";
@@ -11,16 +10,18 @@ type NCR = { id:string; project_id:string; number:string; title:string; discipli
 type Project = { id:string; code:string; name:string };
 
 export default function NCRRegisterPage(){
-  const params=useSearchParams();
-  const initialProject=params.get("project_id")||"";
   const [projects,setProjects]=useState<Project[]>([]);
   const [items,setItems]=useState<NCR[]>([]);
-  const [projectId,setProjectId]=useState(initialProject);
+  const [projectId,setProjectId]=useState("");
   const [status,setStatus]=useState("");
   const [search,setSearch]=useState("");
   const [error,setError]=useState("");
 
-  useEffect(()=>{api<Project[]>("/projects").then(setProjects).catch(e=>setError(e instanceof Error?e.message:"Failed to load projects"))},[]);
+  useEffect(()=>{
+    const query=new URLSearchParams(window.location.search);
+    setProjectId(query.get("project_id")||"");
+    api<Project[]>("/projects").then(setProjects).catch(e=>setError(e instanceof Error?e.message:"Failed to load projects"));
+  },[]);
   useEffect(()=>{
     const qs=new URLSearchParams(); if(projectId)qs.set("project_id",projectId); if(status)qs.set("status",status);
     api<NCR[]>(`/ncrs${qs.toString()?`?${qs}`:""}`).then(setItems).catch(e=>setError(e instanceof Error?e.message:"Failed to load NCRs"));
