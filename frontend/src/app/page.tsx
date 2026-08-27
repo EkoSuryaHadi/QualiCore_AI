@@ -1,6 +1,6 @@
 "use client";
 
-// deployment trigger: executive assurance dashboard v1
+// deployment trigger: executive assurance dashboard v1 after Vercel frontend root fix
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import AuthGuard from "@/components/AuthGuard";
