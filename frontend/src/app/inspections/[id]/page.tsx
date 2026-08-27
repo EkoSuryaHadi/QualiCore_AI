@@ -123,6 +123,7 @@ export default function InspectionDetailPage() {
             <p className="muted">{project ? `${project.code} · ${project.name}` : "Inspection record"}</p>
           </div>
           <div className="head-actions">
+            {item?.result === "FAIL" ? <Link className="btn-link" href={`/ncrs/new?project_id=${encodeURIComponent(item.project_id)}&inspection_id=${encodeURIComponent(item.id)}`}>Create NCR</Link> : null}
             {project ? <Link className="secondary-btn" href={`/projects/${project.id}`}>Project Workspace</Link> : null}
             <Link className="secondary-btn" href={backHref}>← Inspection Register</Link>
           </div>
