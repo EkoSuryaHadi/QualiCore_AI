@@ -16,10 +16,23 @@ export default function NCRDetailPage(){
  function load(){if(!id)return;setError("");api<NCR>(`/ncrs/${id}`).then(async n=>{setItem(n);const [projects,files]=await Promise.all([api<Project[]>("/projects"),api<Evidence[]>(`/evidence/NCR/${id}`)]);setProject(projects.find(p=>p.id===n.project_id)||null);setEvidence(files)}).catch(e=>setError(e instanceof Error?e.message:"Failed to load NCR"))}
  useEffect(load,[id]);
  function setField(name:keyof NCR,value:string){setItem(p=>p?{...p,[name]:value}:p)}
- async function save(e:FormEvent){e.preventDefault();if(!item)return;setSaving(true);setError("");try{const updated=await api<NCR>(`/ncrs/${id}`,{method:"PATCH",body:JSON.stringify({title:item.title,description:item.description,severity:item.severity,root_cause:item.root_cause||null,corrective_action:item.corrective_action||null,due_date:item.due_date||null})});setItem(updated)}catch(e){setError(e instanceof Error?e.message:"Failed to update NCR")}finally{setSaving(false)}}
- async function closeNCR(){if(!item||!confirm("Close this NCR? Root cause and corrective action must be complete."))return;setClosing(true);setError("");try{const closed=await api<NCR>(`/ncrs/${id}/close`,{method:"POST",body:JSON.stringify({})});setItem(closed)}catch(e){setError(e instanceof Error?e.message:"Failed to close NCR")}finally{setClosing(false)}}
+ function payload(n:NCR){return {title:n.title,description:n.description,severity:n.severity,root_cause:n.root_cause?.trim()||null,corrective_action:n.corrective_action?.trim()||null,due_date:n.due_date||null}}
+ async function save(e:FormEvent){e.preventDefault();if(!item)return;setSaving(true);setError("");try{const updated=await api<NCR>(`/ncrs/${id}`,{method:"PATCH",body:JSON.stringify(payload(item))});setItem(updated)}catch(e){setError(e instanceof Error?e.message:"Failed to update NCR")}finally{setSaving(false)}}
+ async function closeNCR(){
+  if(!item)return;
+  const root=item.root_cause?.trim(); const corrective=item.corrective_action?.trim();
+  if(!root||!corrective){setError("Complete Root Cause and Corrective Action before closing this NCR.");return}
+  if(!confirm("Close this NCR? This will save the latest changes and mark the NCR as CLOSED."))return;
+  setClosing(true);setError("");
+  try{
+   const updated=await api<NCR>(`/ncrs/${id}`,{method:"PATCH",body:JSON.stringify(payload(item))});
+   const closed=await api<NCR>(`/ncrs/${id}/close`,{method:"POST",body:JSON.stringify({comment:"Closed from NCR detail after corrective action completion"})});
+   setItem({...updated,...closed});
+  }catch(e){setError(e instanceof Error?e.message:"Failed to close NCR")}finally{setClosing(false)}
+ }
  async function upload(e:ChangeEvent<HTMLInputElement>){const file=e.target.files?.[0];if(!file)return;setUploading(true);setError("");try{const body=new FormData();body.append("file",file);await api<Evidence>(`/evidence/NCR/${id}`,{method:"POST",body});setEvidence(await api<Evidence[]>(`/evidence/NCR/${id}`));e.target.value=""}catch(e){setError(e instanceof Error?e.message:"Failed to upload evidence")}finally{setUploading(false)}}
  const overdue=!!(item&&item.status!=="CLOSED"&&item.due_date&&new Date(`${item.due_date}T23:59:59`).getTime()<Date.now());
+ const readyToClose=!!(item?.root_cause?.trim()&&item?.corrective_action?.trim());
  return <AuthGuard><Shell>
   <div className="page-head"><div><p className="eyebrow">Non-Conformance</p><h1>{item?.number||"NCR Detail"}</h1><p className="muted">{item?.title||"Loading NCR..."}</p></div><div className="head-actions">{project?<Link className="secondary-btn" href={`/projects/${project.id}`}>Project Workspace</Link>:null}<Link className="secondary-btn" href={`/ncrs${item?`?project_id=${encodeURIComponent(item.project_id)}`:""}`}>← NCR Register</Link></div></div>
   {error?<div className="error">{error}</div>:null}
@@ -32,7 +45,7 @@ export default function NCRDetailPage(){
     <label className="full-field"><span>Description</span><textarea disabled={item.status==="CLOSED"} rows={5} value={item.description} onChange={e=>setField("description",e.target.value)}/></label>
     <label className="full-field"><span>Root Cause</span><textarea disabled={item.status==="CLOSED"} rows={5} value={item.root_cause||""} onChange={e=>setField("root_cause",e.target.value)} placeholder="Document verified root cause..."/></label>
     <label className="full-field"><span>Corrective Action</span><textarea disabled={item.status==="CLOSED"} rows={5} value={item.corrective_action||""} onChange={e=>setField("corrective_action",e.target.value)} placeholder="Define corrective action and verification..."/></label>
-   </div>{item.status!=="CLOSED"?<div className="form-actions split-actions"><button type="button" className="secondary-btn" onClick={closeNCR} disabled={closing}>{closing?"Closing...":"Close NCR"}</button><button className="btn-action" disabled={saving}>{saving?"Saving...":"Save Changes"}</button></div>:<div className="source-banner">NCR closed {item.closed_at?new Date(item.closed_at).toLocaleString():""}</div>}</form>
+   </div>{item.status!=="CLOSED"?<><div className="source-banner">{readyToClose?"Ready for closure. Close NCR will save the latest changes automatically.":"Root Cause and Corrective Action are required before closure."}</div><div className="form-actions split-actions"><button type="button" className="secondary-btn" onClick={closeNCR} disabled={closing||saving||!readyToClose}>{closing?"Saving & Closing...":"Close NCR"}</button><button className="btn-action" disabled={saving||closing}>{saving?"Saving...":"Save Changes"}</button></div></>:<div className="source-banner">NCR closed {item.closed_at?new Date(item.closed_at).toLocaleString():""}</div>}</form>
    <div className="card section-card"><div className="toolbar"><div><h2>Evidence</h2><p className="muted small">Attach JPG, PNG, or PDF evidence up to 10 MB.</p></div>{item.status!=="CLOSED"?<label className="secondary-btn upload-btn">{uploading?"Uploading...":"+ Upload Evidence"}<input type="file" accept="image/jpeg,image/png,application/pdf" disabled={uploading} onChange={upload}/></label>:null}</div>{!evidence.length?<div className="empty-state">No NCR evidence uploaded yet.</div>:<div className="evidence-list">{evidence.map(f=><div key={f.id} className="evidence-row"><div><strong>{f.file_name}</strong><div className="muted small">{f.content_type||"file"} · {(f.size_bytes/1024).toFixed(1)} KB</div></div><span className="muted small">{new Date(f.created_at).toLocaleString()}</span></div>)}</div>}</div>
   </>}
  </Shell></AuthGuard>
