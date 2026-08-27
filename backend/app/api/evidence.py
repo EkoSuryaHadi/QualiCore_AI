@@ -1,4 +1,5 @@
 import logging
+import tempfile
 from pathlib import Path
 from uuid import uuid4
 
@@ -7,7 +8,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..activity import audit
-from ..config import settings
 from ..database import get_db
 from ..models import Evidence, EvidenceEntity, Inspection, NCR, PunchItem, Role, User
 from ..schemas import EvidenceOut
@@ -66,7 +66,9 @@ async def upload(
         if not data:
             raise HTTPException(400, "Uploaded file is empty")
 
-        upload_dir = Path(settings.upload_dir)
+        # Vercel Functions expose the application bundle as read-only.
+        # Always use the OS temp directory for transient evidence files.
+        upload_dir = Path(tempfile.gettempdir()) / "qualicore_uploads"
         upload_dir.mkdir(parents=True, exist_ok=True)
         ext = Path(file.filename or "").suffix.lower()
         stored_name = f"{uuid4()}{ext}"
