@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import AuthGuard from "@/components/AuthGuard";
 import Shell from "@/components/Shell";
 import { api } from "@/lib/api";
@@ -12,12 +12,14 @@ type Inspection={id:string;project_id:string;discipline:string;inspection_type:s
 type NCR={id:string};
 
 export default function NewNCRPage(){
- const router=useRouter(); const params=useSearchParams();
- const projectParam=params.get("project_id")||""; const inspectionId=params.get("inspection_id")||"";
- const [projects,setProjects]=useState<Project[]>([]); const [saving,setSaving]=useState(false); const [error,setError]=useState("");
- const [form,setForm]=useState({project_id:projectParam,number:`NCR-${new Date().toISOString().slice(0,10).replaceAll("-","")}-${String(Date.now()).slice(-4)}`,title:"",description:"",discipline:"Mechanical",severity:"MEDIUM",due_date:""});
- useEffect(()=>{api<Project[]>("/projects").then(setProjects).catch(()=>{})},[]);
- useEffect(()=>{if(!inspectionId)return;api<Inspection>(`/inspections/${inspectionId}`).then(i=>setForm(p=>({...p,project_id:i.project_id,discipline:i.discipline,title:`Non-conformance from ${i.inspection_type}`,description:`Source Inspection: ${i.inspection_type}\nInspection Date: ${i.inspection_date}\nLocation: ${i.location||"—"}\nResult: ${i.result}\nRemarks: ${i.remarks||"—"}`}))).catch(e=>setError(e instanceof Error?e.message:"Failed to load source inspection"))},[inspectionId]);
+ const router=useRouter();
+ const [projects,setProjects]=useState<Project[]>([]); const [saving,setSaving]=useState(false); const [error,setError]=useState(""); const [inspectionId,setInspectionId]=useState("");
+ const [form,setForm]=useState({project_id:"",number:`NCR-${new Date().toISOString().slice(0,10).replaceAll("-","")}-${String(Date.now()).slice(-4)}`,title:"",description:"",discipline:"Mechanical",severity:"MEDIUM",due_date:""});
+ useEffect(()=>{
+   const query=new URLSearchParams(window.location.search); const projectId=query.get("project_id")||""; const sourceId=query.get("inspection_id")||""; setInspectionId(sourceId); setForm(p=>({...p,project_id:projectId}));
+   api<Project[]>("/projects").then(setProjects).catch(()=>{});
+   if(sourceId)api<Inspection>(`/inspections/${sourceId}`).then(i=>setForm(p=>({...p,project_id:i.project_id,discipline:i.discipline,title:`Non-conformance from ${i.inspection_type}`,description:`Source Inspection: ${i.inspection_type}\nInspection Date: ${i.inspection_date}\nLocation: ${i.location||"—"}\nResult: ${i.result}\nRemarks: ${i.remarks||"—"}`}))).catch(e=>setError(e instanceof Error?e.message:"Failed to load source inspection"));
+ },[]);
  function setField(name:string,value:string){setForm(p=>({...p,[name]:value}))}
  async function submit(e:FormEvent){e.preventDefault();setSaving(true);setError("");try{const created=await api<NCR>("/ncrs",{method:"POST",body:JSON.stringify({...form,due_date:form.due_date||null})});router.push(`/ncrs/${created.id}`)}catch(e){setError(e instanceof Error?e.message:"Failed to create NCR")}finally{setSaving(false)}}
  return <AuthGuard><Shell>
