@@ -1,5 +1,6 @@
 "use client";
 
+// deployment trigger: executive assurance dashboard v1
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import AuthGuard from "@/components/AuthGuard";
