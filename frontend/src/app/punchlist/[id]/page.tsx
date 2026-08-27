@@ -111,13 +111,23 @@ export default function PunchDetailPage() {
 
   async function upload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !item) return;
     setUploading(true);
     setError("");
     try {
       const body = new FormData();
       body.append("file", file);
       await api<Evidence>(`/evidence/PUNCH/${id}`, { method: "POST", body });
+
+      let current = item;
+      if (item.status === "OPEN") {
+        current = await api<Punch>(`/punch/${id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ status: "IN_PROGRESS" }),
+        });
+        setItem(current);
+      }
+
       setEvidence(await api<Evidence[]>(`/evidence/PUNCH/${id}`));
       e.target.value = "";
     } catch (err) {
@@ -175,7 +185,7 @@ export default function PunchDetailPage() {
             <div className="card section-card">
               <div className="toolbar">
                 <div><h2>Evidence</h2><p className="muted small">Attach JPG, PNG, or PDF evidence up to 10 MB.</p></div>
-                {item.status !== "CLOSED" ? <label className="secondary-btn upload-btn">{uploading ? "Uploading..." : "+ Upload Evidence"}<input type="file" accept="image/jpeg,image/png,application/pdf" disabled={uploading} onChange={upload} /></label> : null}
+                {item.status !== "CLOSED" ? <label className="secondary-btn upload-btn">{uploading ? "Uploading..." : "+ Upload Evidence"}<input type="file" accept="image/jpeg,image/png,application/pdf" disabled={uploading} onChange={upload}/></label> : null}
               </div>
               {!evidence.length ? <div className="empty-state">No punch evidence uploaded yet.</div> : <div className="evidence-list">{evidence.map((f) => <div key={f.id} className="evidence-row"><div><strong>{f.file_name}</strong><div className="muted small">{f.content_type || "file"} · {(f.size_bytes / 1024).toFixed(1)} KB</div></div><span className="muted small">{new Date(f.created_at).toLocaleString()}</span></div>)}</div>}
             </div>
