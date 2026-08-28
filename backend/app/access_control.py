@@ -65,3 +65,19 @@ def project_ids_for_user(db: Session, user: User) -> list[str] | None:
 def can_access_project(db: Session, user: User, project_id: str) -> bool:
     allowed = project_ids_for_user(db, user)
     return allowed is None or project_id in allowed
+
+
+def require_project_access(db: Session, user: User, project_id: str) -> None:
+    if not can_access_project(db, user, project_id):
+        raise HTTPException(403, "You do not have access to this project")
+
+
+def apply_project_scope(query, model, db: Session, user: User):
+    """Apply tenant + project membership scope to a SQLAlchemy select query."""
+    query = query.where(model.organization_id == user.organization_id)
+    allowed = project_ids_for_user(db, user)
+    if allowed is not None:
+        if not allowed:
+            return query.where(False)
+        query = query.where(model.project_id.in_(allowed))
+    return query
