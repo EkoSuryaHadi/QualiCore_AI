@@ -4,10 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ..auth_models import EmailVerificationToken, token_value
 from ..database import get_db
 from ..identity_models import Invitation, MembershipRole, MembershipStatus, Organization, OrganizationMember, ProjectMember
 from ..identity_schemas import InvitationAccept, InvitationCreate, InvitationOut, MemberOut, MemberRoleUpdate, MemberStatusUpdate, OrganizationOut, OrganizationUpdate, ProjectAssignmentIn, RegisterOrganizationIn
-from ..mailer import send_invitation
+from ..mailer import send_email_verification, send_invitation
 from ..models import Project, Role, User
 from ..security import create_access_token, create_session, get_current_user, hash_password, require_roles
 
@@ -56,7 +57,8 @@ def register(body: RegisterOrganizationIn, db: Session = Depends(get_db)):
     org=Organization(name=body.organization_name.strip(),slug=_unique_slug(db,body.organization_name),country=body.country); db.add(org); db.flush()
     user=User(organization_id=org.id,email=email,full_name=body.full_name.strip(),password_hash=hash_password(body.password),role=Role.ADMIN,is_active=True); db.add(user); db.flush()
     db.add(OrganizationMember(organization_id=org.id,user_id=user.id,role=MembershipRole.ORGANIZATION_ADMIN.value,status=MembershipStatus.ACTIVE.value,job_title=body.job_title))
-    token=_session_token(db,user); db.commit(); db.refresh(user)
+    verify_raw=token_value(); db.add(EmailVerificationToken.create(user.id,verify_raw)); token=_session_token(db,user); db.commit(); db.refresh(user)
+    send_email_verification(user.email,verify_raw)
     return {"access_token":token,"token_type":"bearer","organization":{"id":org.id,"name":org.name,"slug":org.slug},"user":{"id":user.id,"email":user.email,"full_name":user.full_name,"role":MembershipRole.ORGANIZATION_ADMIN.value}}
 
 
@@ -123,6 +125,7 @@ def accept_invitation(body:InvitationAccept,db:Session=Depends(get_db)):
     user=User(organization_id=invitation.organization_id,email=invitation.email,full_name=body.full_name.strip(),password_hash=hash_password(body.password),role=_legacy_role(invitation.role),is_active=True); db.add(user); db.flush()
     db.add(OrganizationMember(organization_id=invitation.organization_id,user_id=user.id,role=invitation.role,status=MembershipStatus.ACTIVE.value,job_title=body.job_title))
     if invitation.project_id: db.add(ProjectMember(organization_id=invitation.organization_id,project_id=invitation.project_id,user_id=user.id,role=invitation.role))
+    proof_raw=token_value(); proof=EmailVerificationToken.create(user.id,proof_raw); proof.verified_at=datetime.now(timezone.utc); db.add(proof)
     invitation.accepted_at=datetime.now(timezone.utc); token=_session_token(db,user); db.commit(); db.refresh(user)
     return {"access_token":token,"token_type":"bearer","user":{"id":user.id,"email":user.email,"full_name":user.full_name,"role":invitation.role}}
 
