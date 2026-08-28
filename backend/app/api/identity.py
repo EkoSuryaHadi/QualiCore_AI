@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..identity_models import Invitation, MembershipRole, MembershipStatus, Organization, OrganizationMember, ProjectMember
 from ..identity_schemas import InvitationAccept, InvitationCreate, InvitationOut, MemberOut, MemberRoleUpdate, MemberStatusUpdate, OrganizationOut, OrganizationUpdate, ProjectAssignmentIn, RegisterOrganizationIn
+from ..mailer import send_invitation
 from ..models import Project, Role, User
 from ..security import create_access_token, create_session, get_current_user, hash_password, require_roles
 
@@ -86,14 +87,16 @@ def members(db:Session=Depends(get_db),admin:User=Depends(require_roles(Role.ADM
 
 @router.post("/invitations",response_model=InvitationOut,status_code=201)
 def invite(body:InvitationCreate,db:Session=Depends(get_db),admin:User=Depends(require_roles(Role.ADMIN))):
-    _ensure_org(db,admin); email=body.email.lower()
+    org=_ensure_org(db,admin); email=body.email.lower()
     if db.scalar(select(User.id).where(User.email==email)): raise HTTPException(409,"A user with this email already exists")
     if body.project_id:
         project=db.get(Project,body.project_id)
         if not project or project.organization_id!=admin.organization_id: raise HTTPException(404,"Project not found")
     existing=db.scalar(select(Invitation).where(Invitation.organization_id==admin.organization_id,Invitation.email==email,Invitation.accepted_at.is_(None)))
     if existing: db.delete(existing); db.flush()
-    invitation=Invitation(organization_id=admin.organization_id,email=email,role=body.role.value,project_id=body.project_id,invited_by=admin.id); db.add(invitation); db.commit(); db.refresh(invitation); return invitation
+    invitation=Invitation(organization_id=admin.organization_id,email=email,role=body.role.value,project_id=body.project_id,invited_by=admin.id); db.add(invitation); db.commit(); db.refresh(invitation)
+    send_invitation(invitation.email,invitation.token,org.name)
+    return invitation
 
 
 @router.get("/invitations",response_model=list[InvitationOut])
