@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import AuthGuard from "@/components/AuthGuard";
 import Shell from "@/components/Shell";
@@ -28,10 +29,7 @@ export default function UsersSettingsPage() {
     setLoading(true); setError("");
     try {
       const [organization, memberRows, inviteRows, projectRows] = await Promise.all([
-        api<Organization>("/identity/organization"),
-        api<Member[]>("/identity/members"),
-        api<Invitation[]>("/identity/invitations"),
-        api<Project[]>("/projects"),
+        api<Organization>("/identity/organization"), api<Member[]>("/identity/members"), api<Invitation[]>("/identity/invitations"), api<Project[]>("/projects"),
       ]);
       setOrg(organization); setMembers(memberRows); setInvitations(inviteRows); setProjects(projectRows);
     } catch (err) { setError(err instanceof Error ? err.message : "Failed to load administration"); }
@@ -44,43 +42,22 @@ export default function UsersSettingsPage() {
     e.preventDefault(); setError(""); setNotice("");
     try {
       await api("/identity/invitations", { method: "POST", body: JSON.stringify({ email, role, project_id: projectId || null }) });
-      setEmail(""); setRole("VIEWER"); setProjectId(""); setNotice("Invitation created. Copy the invitation link below and send it to the user.");
-      await load();
+      setEmail(""); setRole("VIEWER"); setProjectId(""); setNotice("Invitation created. Copy the invitation link below and send it to the user."); await load();
     } catch (err) { setError(err instanceof Error ? err.message : "Could not create invitation"); }
   }
 
-  async function changeRole(userId: string, nextRole: string) {
-    try { await api(`/identity/members/${userId}/role`, { method: "PATCH", body: JSON.stringify({ role: nextRole }) }); await load(); }
-    catch (err) { setError(err instanceof Error ? err.message : "Could not change role"); }
-  }
-
-  async function toggleStatus(member: Member) {
-    const next = member.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
-    try { await api(`/identity/members/${member.user_id}/status`, { method: "PATCH", body: JSON.stringify({ status: next }) }); await load(); }
-    catch (err) { setError(err instanceof Error ? err.message : "Could not update status"); }
-  }
-
-  async function assignProject(userId: string, nextProject: string) {
-    if (!nextProject) return;
-    try { await api(`/identity/members/${userId}/projects`, { method: "POST", body: JSON.stringify({ project_id: nextProject }) }); await load(); }
-    catch (err) { setError(err instanceof Error ? err.message : "Could not assign project"); }
-  }
-
-  async function removeProject(userId: string, pid: string) {
-    try { await api(`/identity/members/${userId}/projects/${pid}`, { method: "DELETE" }); await load(); }
-    catch (err) { setError(err instanceof Error ? err.message : "Could not remove project"); }
-  }
-
-  async function copyInvite(token: string) {
-    const url = `${window.location.origin}/join?token=${encodeURIComponent(token)}`;
-    await navigator.clipboard.writeText(url);
-    setNotice("Invitation link copied.");
-  }
+  async function changeRole(userId: string, nextRole: string) { try { await api(`/identity/members/${userId}/role`, { method: "PATCH", body: JSON.stringify({ role: nextRole }) }); await load(); } catch (err) { setError(err instanceof Error ? err.message : "Could not change role"); } }
+  async function toggleStatus(member: Member) { const next = member.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE"; try { await api(`/identity/members/${member.user_id}/status`, { method: "PATCH", body: JSON.stringify({ status: next }) }); await load(); } catch (err) { setError(err instanceof Error ? err.message : "Could not update status"); } }
+  async function assignProject(userId: string, nextProject: string) { if (!nextProject) return; try { await api(`/identity/members/${userId}/projects`, { method: "POST", body: JSON.stringify({ project_id: nextProject }) }); await load(); } catch (err) { setError(err instanceof Error ? err.message : "Could not assign project"); } }
+  async function removeProject(userId: string, pid: string) { try { await api(`/identity/members/${userId}/projects/${pid}`, { method: "DELETE" }); await load(); } catch (err) { setError(err instanceof Error ? err.message : "Could not remove project"); } }
+  async function copyInvite(token: string) { const url = `${window.location.origin}/join?token=${encodeURIComponent(token)}`; await navigator.clipboard.writeText(url); setNotice("Invitation link copied."); }
+  async function revokeInvite(id:string){if(!window.confirm("Revoke this pending invitation?"))return;try{await api(`/identity/invitations/${id}`,{method:"DELETE"});setNotice("Invitation revoked.");await load()}catch(err){setError(err instanceof Error?err.message:"Could not revoke invitation")}}
 
   const projectMap = useMemo(() => Object.fromEntries(projects.map((p) => [p.id, p])), [projects]);
 
   return <AuthGuard><Shell>
     <div className="page-head"><div><p className="eyebrow">Administration</p><h1>Users & Access</h1><p className="muted">Manage organization membership, roles, invitations and project access.</p></div>{org ? <div className="org-chip"><strong>{org.name}</strong><span>{org.country || org.slug}</span></div> : null}</div>
+    <div className="admin-tabs"><Link href="/settings/organization">Organization</Link><Link href="/settings/users">Users & Access</Link></div>
     {error ? <div className="error">{error}</div> : null}{notice ? <div className="source-banner">{notice}</div> : null}
 
     <div className="card section-card"><div className="toolbar"><div><h2>Invite User</h2><p className="muted small">New users join only through a secure invitation link.</p></div></div>
@@ -104,7 +81,7 @@ export default function UsersSettingsPage() {
     </div>
 
     <div className="card section-card"><div className="toolbar"><div><h2>Invitations</h2><p className="muted small">Pending and accepted invitation history.</p></div></div>
-      {!invitations.length ? <div className="empty-state">No invitations yet.</div> : <div className="table-wrap"><table className="data-table"><thead><tr><th>Email</th><th>Role</th><th>Project</th><th>Status</th><th>Expires</th><th></th></tr></thead><tbody>{invitations.map((i) => <tr key={i.id}><td>{i.email}</td><td>{i.role}</td><td>{i.project_id ? projectMap[i.project_id]?.code || "Assigned" : "—"}</td><td>{i.accepted_at ? <span className="status status-active">ACCEPTED</span> : <span className="status status-hold">PENDING</span>}</td><td>{new Date(i.expires_at).toLocaleDateString()}</td><td>{!i.accepted_at ? <button className="secondary-btn" onClick={() => void copyInvite(i.token)}>Copy Invite Link</button> : null}</td></tr>)}</tbody></table></div>}
+      {!invitations.length ? <div className="empty-state">No invitations yet.</div> : <div className="table-wrap"><table className="data-table"><thead><tr><th>Email</th><th>Role</th><th>Project</th><th>Status</th><th>Expires</th><th></th></tr></thead><tbody>{invitations.map((i) => <tr key={i.id}><td>{i.email}</td><td>{i.role}</td><td>{i.project_id ? projectMap[i.project_id]?.code || "Assigned" : "—"}</td><td>{i.accepted_at ? <span className="status status-active">ACCEPTED</span> : <span className="status status-hold">PENDING</span>}</td><td>{new Date(i.expires_at).toLocaleDateString()}</td><td>{!i.accepted_at ? <div className="head-actions"><button className="secondary-btn" onClick={() => void copyInvite(i.token)}>Copy Link</button><button className="danger-btn" onClick={() => void revokeInvite(i.id)}>Revoke</button></div> : null}</td></tr>)}</tbody></table></div>}
     </div>
   </Shell></AuthGuard>;
 }
