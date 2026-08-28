@@ -10,11 +10,9 @@ class Settings(BaseSettings):
     auto_bootstrap: bool = False
     seed_demo: bool = False
     frontend_url: str = "http://localhost:3000"
-    # Enable only in controlled test environments. Production should deliver
-    # reset/verification links through an email provider instead of API responses.
     auth_link_preview: bool = False
-    # Vercel Functions expose a read-only application filesystem.
-    # /tmp is the writable ephemeral location supported at runtime.
+    resend_api_key: str | None = None
+    email_from: str = "QualiCore AI <no-reply@qualicore.ai>"
     upload_dir: str = "/tmp/qualicore_uploads"
     model_config = SettingsConfigDict(env_file="../.env", extra="ignore")
 
