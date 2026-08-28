@@ -21,9 +21,9 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(
-    title="QualiCore AI MVP API",
-    version="0.3.7",
-    description="Deployable Project Assurance MVP baseline for EPC quality workflows",
+    title="QualiCore AI API",
+    version="0.4.0",
+    description="Multi-tenant Project Assurance platform for EPC quality workflows",
     lifespan=lifespan,
 )
 
@@ -46,7 +46,7 @@ for router in (
 
 @app.get("/health", tags=["System"])
 def health():
-    return {"status": "ok", "service": "qualicore-api", "version": "0.3.7"}
+    return {"status": "ok", "service": "qualicore-api", "version": "0.4.0"}
 
 @app.get("/health/db", tags=["System"])
 def health_db():
@@ -56,8 +56,4 @@ def health_db():
         return {"status": "ok", "database": "connected"}
     except Exception as exc:
         logger.exception("Database health check failed")
-        return {
-            "status": "error",
-            "database": "unavailable",
-            "error_type": type(exc).__name__,
-        }
+        return {"status": "error", "database": "unavailable", "error_type": type(exc).__name__}
