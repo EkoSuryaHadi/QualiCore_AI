@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ..access_control import can_access_project, project_ids_for_user
 from ..activity import audit
 from ..database import get_db
 from ..models import Inspection, InspectionResult, Project, Role, User
@@ -11,7 +12,7 @@ from ..security import get_current_user, require_roles
 router = APIRouter(prefix="/inspections", tags=["Inspections"])
 
 
-def get_item(db: Session, item_id: str, organization_id: str) -> Inspection:
+def get_item(db: Session, item_id: str, organization_id: str, user: User | None = None) -> Inspection:
     item = db.scalar(
         select(Inspection).where(
             Inspection.id == item_id,
@@ -20,6 +21,8 @@ def get_item(db: Session, item_id: str, organization_id: str) -> Inspection:
     )
     if not item:
         raise HTTPException(404, "Inspection not found")
+    if user is not None and not can_access_project(db, user, item.project_id):
+        raise HTTPException(403, "Project access not assigned")
     return item
 
 
@@ -31,8 +34,13 @@ def list_items(
     user: User = Depends(get_current_user),
 ):
     query = select(Inspection).where(Inspection.organization_id == user.organization_id)
+    allowed = project_ids_for_user(db, user)
     if project_id:
+        if not can_access_project(db, user, project_id):
+            raise HTTPException(403, "Project access not assigned")
         query = query.where(Inspection.project_id == project_id)
+    elif allowed is not None:
+        query = query.where(Inspection.project_id.in_(allowed)) if allowed else query.where(False)
     if result:
         query = query.where(Inspection.result == result)
     return db.scalars(query.order_by(Inspection.inspection_date.desc(), Inspection.created_at.desc())).all()
@@ -44,7 +52,7 @@ def detail(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    return get_item(db, item_id, user.organization_id)
+    return get_item(db, item_id, user.organization_id, user)
 
 
 @router.post("", response_model=InspectionOut, status_code=201)
@@ -61,6 +69,8 @@ def create(
     )
     if not project:
         raise HTTPException(404, "Project not found")
+    if not can_access_project(db, user, body.project_id):
+        raise HTTPException(403, "Project access not assigned")
 
     item = Inspection(
         **body.model_dump(),
@@ -89,7 +99,7 @@ def update(
     db: Session = Depends(get_db),
     user: User = Depends(require_roles(Role.ADMIN, Role.QA_MANAGER, Role.QA_ENGINEER)),
 ):
-    item = get_item(db, item_id, user.organization_id)
+    item = get_item(db, item_id, user.organization_id, user)
     for key, value in body.model_dump(exclude_unset=True).items():
         setattr(item, key, value)
     audit(
@@ -111,7 +121,7 @@ def delete(
     db: Session = Depends(get_db),
     user: User = Depends(require_roles(Role.ADMIN, Role.QA_MANAGER)),
 ):
-    item = get_item(db, item_id, user.organization_id)
+    item = get_item(db, item_id, user.organization_id, user)
     audit(
         db,
         user,
