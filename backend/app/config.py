@@ -9,6 +9,10 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000"
     auto_bootstrap: bool = False
     seed_demo: bool = False
+    frontend_url: str = "http://localhost:3000"
+    # Enable only in controlled test environments. Production should deliver
+    # reset/verification links through an email provider instead of API responses.
+    auth_link_preview: bool = False
     # Vercel Functions expose a read-only application filesystem.
     # /tmp is the writable ephemeral location supported at runtime.
     upload_dir: str = "/tmp/qualicore_uploads"
