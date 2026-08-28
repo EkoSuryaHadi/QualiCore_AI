@@ -1,8 +1,11 @@
+from fastapi import Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from .database import get_db
 from .identity_models import MembershipRole, OrganizationMember, ProjectMember
 from .models import Role, User
+from .security import get_current_user
 
 
 def membership_role(db: Session, user: User) -> str:
@@ -22,11 +25,19 @@ def membership_role(db: Session, user: User) -> str:
     }.get(user.role, MembershipRole.VIEWER.value)
 
 
+def require_membership_roles(*roles: MembershipRole):
+    allowed = {role.value for role in roles}
+    def dep(user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> User:
+        if membership_role(db, user) not in allowed:
+            raise HTTPException(403, "Insufficient permission")
+        return user
+    return dep
+
+
 def has_org_wide_access(db: Session, user: User) -> bool:
     role = membership_role(db, user)
     if role in {MembershipRole.ORGANIZATION_ADMIN.value, MembershipRole.QA_MANAGER.value}:
         return True
-    # Backward compatibility for seeded demo users until explicit assignments are added.
     if user.organization_id == "demo-org":
         assignments = db.scalar(
             select(ProjectMember.id).where(
@@ -39,7 +50,6 @@ def has_org_wide_access(db: Session, user: User) -> bool:
 
 
 def project_ids_for_user(db: Session, user: User) -> list[str] | None:
-    """Return None for organization-wide access, otherwise explicit project ids."""
     if has_org_wide_access(db, user):
         return None
     return list(
