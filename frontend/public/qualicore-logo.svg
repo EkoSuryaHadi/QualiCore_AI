@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 220" role="img" aria-labelledby="title desc">
+  <title id="title">QualiCore AI</title>
+  <desc id="desc">QualiCore AI project assurance logo with Q, shield, analytics bars and gold assurance check.</desc>
+  <defs>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#08275f"/><stop offset="1" stop-color="#1599ef"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f5c542"/><stop offset="1" stop-color="#d99900"/></linearGradient>
+  </defs>
+  <g transform="translate(16 18)">
+    <path d="M93 10a82 82 0 1 0 51 146l28 27h31l-43-42a82 82 0 0 0 15-48A82 82 0 0 0 93 10Zm0 22a60 60 0 1 1 0 120 60 60 0 0 1 0-120Z" fill="#071f4f"/>
+    <path d="M93 45 133 60v33c0 31-17 47-40 58-23-11-40-27-40-58V60l40-15Z" fill="none" stroke="url(#blue)" stroke-width="7"/>
+    <rect x="70" y="90" width="10" height="32" rx="2" fill="#0b56bd"/>
+    <rect x="88" y="76" width="10" height="46" rx="2" fill="#1479dd"/>
+    <rect x="106" y="63" width="10" height="59" rx="2" fill="#24a4f2"/>
+    <path d="M58 117 84 140 142 91" fill="none" stroke="url(#gold)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="238" y="103" font-family="Inter,Arial,sans-serif" font-size="78" font-weight="800" letter-spacing="-2" fill="#071f4f">Quali</text>
+  <text x="430" y="103" font-family="Inter,Arial,sans-serif" font-size="78" font-weight="800" letter-spacing="-2" fill="url(#blue)">Core</text>
+  <rect x="634" y="39" width="95" height="72" rx="13" fill="url(#blue)"/>
+  <text x="653" y="95" font-family="Inter,Arial,sans-serif" font-size="48" font-weight="800" fill="#fff">AI</text>
+  <text x="240" y="148" font-family="Inter,Arial,sans-serif" font-size="19" font-weight="700" letter-spacing="7" fill="#59677a">AI-POWERED PROJECT ASSURANCE</text>
+  <text x="240" y="180" font-family="Inter,Arial,sans-serif" font-size="14" font-weight="700" letter-spacing="4" fill="#1479dd">ASSURE BEFORE FAILURE</text>
+</svg>
