@@ -10,7 +10,8 @@ dependencies = [
   "pydantic-settings>=2.10,<3",
   "python-multipart>=0.0.20,<1",
   "email-validator>=2.2,<3",
-  "alembic>=1.16,<2"
+  "alembic>=1.16,<2",
+  "httpx>=0.28,<1"
 ]
 
 [tool.vercel]
