@@ -6,7 +6,13 @@ class Settings(BaseSettings):
     jwt_secret: str = "dev-secret-change-me"
     jwt_algorithm: str = "HS256"
     access_token_minutes: int = 480
-    cors_origins: str = "http://localhost:3000"
+    cors_origins: str = ",".join(
+        (
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "https://quali-core-ai.vercel.app",
+        )
+    )
     auto_bootstrap: bool = False
     seed_demo: bool = False
     frontend_url: str = "http://localhost:3000"

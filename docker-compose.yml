@@ -18,7 +18,7 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://qualicore:qualicore@db:5432/qualicore
       JWT_SECRET: local-dev-secret-change-me
-      CORS_ORIGINS: http://localhost:3000
+      CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000,https://quali-core-ai.vercel.app
       AUTO_BOOTSTRAP: "true"
       SEED_DEMO: "true"
       UPLOAD_DIR: /app/uploads
